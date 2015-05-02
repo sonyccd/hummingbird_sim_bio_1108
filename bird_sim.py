@@ -1,13 +1,10 @@
 import logging
 import sys
-import time
 
 __author__ = 'Bradford W. Bazemore'
 
 import random
-import matplotlib.pyplot as plt
 import simpy
-import scipy.stats as st
 import numpy as np
 
 
@@ -19,25 +16,25 @@ f3: Equal
 '''
 
 RANDOM_SEED = 42
-FEEDER_SIZE = 500
+FEEDER_SIZE = 200
 DRINK_SPEED = 1
 BIRD_INTER = [10, 50]
 SIM_TIME = 1700
-FEEDER_DATA = [[], [], [], []]
-FEEDER_TIMES=[0,0,0,0]
-FEEDER_TOTAL_TIMES=[]
-FEEDER_FULL_DATA=[]
+SIM_DATA_LEVEL = [[], [], [], []]
+FEEDER_TIME = [0, 0, 0, 0]
+SIMULATION_TIMES = [[], [], [], []]
+SIMULATION_LEVEL_DATA = []
 FEEDER_HITS = [0, 0, 0, 0]
 ProbDist = (0.50, 0.30, 0.10, 0.10)
 
-
 '''the bird simulation thing'''
+
 
 def bird(env, id, feeder):
     # FEEDER_INDEX = [0, 1, 2, 3]
     waits = 0
     while True:
-        #feeder_id = random.sample(FEEDER_INDEX, 1)[0]
+        # feeder_id = random.sample(FEEDER_INDEX, 1)[0]
         feeder_id = roll(ProbDist)
         with feeder[feeder_id][0].request() as req:
             wait = random.randint(1, 5)
@@ -46,7 +43,7 @@ def bird(env, id, feeder):
             if req in check:
                 waits = 0
                 if feeder[feeder_id][1].level == 0:
-                    #FEEDER_INDEX.remove(feeder_id)
+                    # FEEDER_INDEX.remove(feeder_id)
                     continue
                 else:
                     try:
@@ -59,9 +56,9 @@ def bird(env, id, feeder):
                     logging.debug('%s finished eating in %.1f seconds.', id, env.now - start)
             else:
                 if waits == 5:
-                    logging.debug( "EXIT")
+                    logging.debug("EXIT")
                     return
-                logging.debug( '%s waits %d',id, waits)
+                logging.debug('%s waits %d', id, waits)
                 waits += 1
         yield env.timeout(random.randint(*BIRD_INTER))
 
@@ -70,7 +67,7 @@ def bird(env, id, feeder):
 
 
 def bird_generator(env, feeder):
-    for i in range(0, 50):
+    for i in range(0, 10):
         yield env.timeout(random.randint(*BIRD_INTER))
         env.process(bird(env, i, feeder))
 
@@ -80,21 +77,24 @@ def bird_generator(env, feeder):
 
 def stats(env, feeder):
     start = env.now
-    old_level=0
+    old_level = [0, 0, 0, 0]
     while True:
+        '''EXIT IF SIM TIME IS OUT'''
         if (env.now - start) > SIM_TIME:
             env.exit(env)
         else:
+            logging.debug('============================')
+            count = 0  # what feeder are we looking at
+            temp_time = env.now
+            for i in feeder:
+                logging.debug('Feeder: %s  Level: %d', i[2], i[1].level)
+                if i[1].level == old_level[count] and FEEDER_TIME[count] == 0 and i[1].level < 10:
+                    FEEDER_TIME[count] = temp_time - start
+                SIM_DATA_LEVEL[count].append(i[1].level)
+                old_level[count] = i[1].level
+                count += 1
+            logging.debug('============================')
             yield env.timeout(100)
-        logging.debug( '============================')
-        count = 0
-        for i in feeder:
-            logging.debug( 'Feeder: %s  Level: %d' ,i[2], i[1].level)
-            if i[1].level==old_level & FEEDER_TIMES[count]==0:
-                FEEDER_TIMES.append(env.now-stat)
-            FEEDER_DATA[count].append(i[1].level)
-            count = count + 1
-        logging.debug( '============================')
 
 
 '''random number generator with bias'''
@@ -110,16 +110,21 @@ def roll(massDist):
             return result - 1
         result += 1
 
+
+'''find outlieres'''
+
+
 def reject_outliers(data, m=3):
     d = np.abs(data - np.median(data))
     mdev = np.median(d)
-    s = d/mdev if mdev else 0.
-    return data[s<m]
+    s = d / mdev if mdev else 0.
+    return data[s < m]
+
 
 '''init the simulation env'''
-for c in range(0,1):
-    logging.basicConfig(stream=sys.stderr,)
-    #random.seed(RANDOM_SEED)
+for c in range(0, 1):
+    logging.basicConfig(stream=sys.stderr)
+    random.seed(RANDOM_SEED)
     env = simpy.Environment()
     feeder = []
     for i in range(0, 4):
@@ -127,16 +132,18 @@ for c in range(0,1):
     env.process(bird_generator(env, feeder))
     stat = env.process(stats(env, feeder))
     env.run(until=stat)
-    FEEDER_FULL_DATA.append(FEEDER_DATA)
-    FEEDER_DATA=[[],[],[],[]]
+    SIMULATION_LEVEL_DATA.append(SIM_DATA_LEVEL)
+    SIM_DATA_LEVEL = [[], [], [], []]
 
-print FEEDER_FULL_DATA[0][0]
+for terp in SIMULATION_LEVEL_DATA[0]:
+    print terp
+print FEEDER_TIME
 
 
-#print st.f_oneway()
+# print st.f_oneway()
 
 
-plt.figure(1)
+'''plt.figure(1)
 plt.plot(FEEDER_DATA[0], label='SIR')
 plt.plot(FEEDER_DATA[1], label='Sugar')
 plt.plot(FEEDER_DATA[2], label='Splenda')
@@ -151,4 +158,4 @@ plt.title("# of hits for each sweetener")
 plt.xticks((0, 1, 2, 3), ('SIR', 'Sugar', 'Splend', 'Equal'))
 plt.ylabel("#hits")
 plt.xlabel("types of sweetener")
-plt.show()
+plt.show()'''
