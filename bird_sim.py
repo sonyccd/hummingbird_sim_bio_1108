@@ -1,3 +1,4 @@
+import csv
 import logging
 import sys
 
@@ -99,7 +100,7 @@ def stats(env, feeder):
                 old_level[count] = i[1].level
                 count += 1
             logging.debug('============================')
-            yield env.timeout(100)
+            yield env.timeout(50)
 
 
 '''random number generator with bias'''
@@ -127,8 +128,8 @@ def reject_outliers(data, m=3):
 
 
 '''init the simulation env'''
-for c in range(0, 10):
-    logging.basicConfig(stream=sys.stderr)
+for c in range(0, 20):
+    logging.basicConfig(stream=sys.stderr, level=10)
     # random.seed(RANDOM_SEED)
     env = simpy.Environment()
     feeder = []
@@ -145,11 +146,18 @@ for c in range(0, 10):
     SIM_DATA_LEVEL = [[], [], [], []]
     FEEDER_TIME = [0, 0, 0, 0]
 
+level_file = open('levels.csv', 'wb')
+wr = csv.writer(level_file, delimiter=',')
+for t in SIMULATION_LEVEL_DATA:
+    wr.writerow(t)
+times_file = open('times.csv', 'wb')
+wr = csv.writer(times_file, delimiter=',')
+for i in SIMULATION_TIMES:
+    wr.writerow(i)
+wr.writerow(st.f_oneway(SIMULATION_TIMES[0], SIMULATION_TIMES[1], SIMULATION_TIMES[2], SIMULATION_TIMES[3]))
 for terp in SIMULATION_LEVEL_DATA[0]:
-    print terp
-print SIMULATION_TIMES
-
-print st.f_oneway(SIMULATION_TIMES[0], SIMULATION_TIMES[1], SIMULATION_TIMES[2], SIMULATION_TIMES[3])
+    logging.debug(terp)
+logging.debug(SIMULATION_TIMES)
 
 '''plt.figure(1)
 plt.plot(FEEDER_DATA[0], label='SIR')
