@@ -6,6 +6,7 @@ __author__ = 'Bradford W. Bazemore'
 import random
 import simpy
 import numpy as np
+import scipy.stats as st
 
 
 '''
@@ -19,7 +20,8 @@ RANDOM_SEED = 42
 FEEDER_SIZE = 200
 DRINK_SPEED = 1
 BIRD_INTER = [10, 50]
-SIM_TIME = 1700
+SIM_TIME = 2000
+
 SIM_DATA_LEVEL = [[], [], [], []]
 FEEDER_TIME = [0, 0, 0, 0]
 SIMULATION_TIMES = [[], [], [], []]
@@ -81,6 +83,9 @@ def stats(env, feeder):
     while True:
         '''EXIT IF SIM TIME IS OUT'''
         if (env.now - start) > SIM_TIME:
+            for count in range(0, 4):
+                if FEEDER_TIME[count] == 0:
+                    FEEDER_TIME[count] = SIM_TIME
             env.exit(env)
         else:
             logging.debug('============================')
@@ -122,9 +127,9 @@ def reject_outliers(data, m=3):
 
 
 '''init the simulation env'''
-for c in range(0, 1):
+for c in range(0, 10):
     logging.basicConfig(stream=sys.stderr)
-    random.seed(RANDOM_SEED)
+    # random.seed(RANDOM_SEED)
     env = simpy.Environment()
     feeder = []
     for i in range(0, 4):
@@ -132,16 +137,19 @@ for c in range(0, 1):
     env.process(bird_generator(env, feeder))
     stat = env.process(stats(env, feeder))
     env.run(until=stat)
+    q = 0
+    for sim_temp in SIMULATION_TIMES:
+        sim_temp.append(FEEDER_TIME[q])
+        q += 1
     SIMULATION_LEVEL_DATA.append(SIM_DATA_LEVEL)
     SIM_DATA_LEVEL = [[], [], [], []]
+    FEEDER_TIME = [0, 0, 0, 0]
 
 for terp in SIMULATION_LEVEL_DATA[0]:
     print terp
-print FEEDER_TIME
+print SIMULATION_TIMES
 
-
-# print st.f_oneway()
-
+print st.f_oneway(SIMULATION_TIMES[0], SIMULATION_TIMES[1], SIMULATION_TIMES[2], SIMULATION_TIMES[3])
 
 '''plt.figure(1)
 plt.plot(FEEDER_DATA[0], label='SIR')
