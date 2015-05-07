@@ -128,7 +128,7 @@ def reject_outliers(data, m=3):
 
 
 '''init the simulation env'''
-for c in range(0, 20):
+for c in range(0, 50):
     logging.basicConfig(stream=sys.stderr, level=10)
     # random.seed(RANDOM_SEED)
     env = simpy.Environment()
@@ -146,11 +146,11 @@ for c in range(0, 20):
     SIM_DATA_LEVEL = [[], [], [], []]
     FEEDER_TIME = [0, 0, 0, 0]
 
-level_file = open('levels.csv', 'wb')
+level_file = open('levelsT.csv', 'wb')
 wr = csv.writer(level_file, delimiter=',')
 for t in SIMULATION_LEVEL_DATA:
     wr.writerow(t)
-times_file = open('times.csv', 'wb')
+times_file = open('timesT.csv', 'wb')
 wr = csv.writer(times_file, delimiter=',')
 for i in SIMULATION_TIMES:
     wr.writerow(i)
